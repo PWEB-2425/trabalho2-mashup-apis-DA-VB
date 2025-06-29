@@ -1,73 +1,134 @@
-<!-- ... (código anterior permanece igual até a div weatherResult) ... -->
-
-<div id="weatherResult" class="bg-white p-6 rounded-lg shadow-md mb-6" style="display: none;">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Informações do Clima -->
-        <div>
-            <h3 class="text-xl font-bold mb-4">Informações do Clima</h3>
-            <div id="weatherInfo" class="space-y-2">
-                <!-- Dados do clima serão inseridos aqui -->
-            </div>
-        </div>
-        
-        <!-- Informações do País -->
-        <div>
-            <h3 class="text-xl font-bold mb-4">Informações do País</h3>
-            <div id="countryInfo" class="space-y-2">
-                <!-- Dados do país serão inseridos aqui -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ... (resto do HTML permanece igual) ... -->
-
-<script>
-document.getElementById('searchButton').addEventListener('click', async () => {
-    const city = document.getElementById('cityInput').value;
-    const weatherResult = document.getElementById('weatherResult');
-    const weatherInfo = document.getElementById('weatherInfo');
-    const countryInfo = document.getElementById('countryInfo');
-    const errorMessage = document.getElementById('errorMessage');
-
-    try {
-        const response = await fetch(`/api/weather/${encodeURIComponent(city)}`);
-        const data = await response.json();
-
-        if (response.ok) {
-            errorMessage.style.display = 'none';
-            weatherResult.style.display = 'block';
-
-            // Atualizar informações do clima
-            weatherInfo.innerHTML = `
-                <p class="mb-2"><strong>Cidade:</strong> ${data.weather.city}, ${data.weather.country}</p>
-                <p class="mb-2"><strong>Temperatura:</strong> ${data.weather.temperature}°C</p>
-                <p class="mb-2"><strong>Condição:</strong> ${data.weather.description}</p>
-                <p class="mb-2"><strong>Umidade:</strong> ${data.weather.humidity}%</p>
-                <p><strong>Velocidade do Vento:</strong> ${data.weather.windSpeed} m/s</p>
-            `;
-
-            // Atualizar informações do país
-            countryInfo.innerHTML = `
-                <p class="mb-2"><strong>País:</strong> ${data.countryInfo.name}</p>
-                <p class="mb-2"><strong>Capital:</strong> ${data.countryInfo.capital}</p>
-                <p class="mb-2"><strong>População:</strong> ${data.countryInfo.population.toLocaleString()}</p>
-                <p class="mb-2"><strong>Região:</strong> ${data.countryInfo.region}</p>
-                <p class="mb-2"><strong>Sub-região:</strong> ${data.countryInfo.subregion || 'N/A'}</p>
-                <img src="${data.countryInfo.flag}" alt="Bandeira" class="mt-4 w-32">
-                <p class="mt-2">
-                    <a href="${data.countryInfo.maps}" target="_blank" class="text-blue-500 hover:text-blue-700">
-                        Ver no Google Maps
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Weather App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-semibold">Weather App</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-600">Bem-vindo, <%= user.name %></span>
+                    <a href="/auth/logout" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+                        Logout
                     </a>
-                </p>
-            `;
-        } else {
-            throw new Error(data.error || 'Erro ao buscar dados');
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-2xl font-bold mb-4">Pesquisar Cidade</h1>
+            
+            <!-- Search Form -->
+            <div class="flex gap-4 mb-6">
+                <input type="text" 
+                       id="cityInput" 
+                       placeholder="Digite o nome da cidade" 
+                       class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="searchButton" 
+                        class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+                    Pesquisar
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="weatherResult" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Weather Information -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-xl font-semibold mb-4">Informações do Clima</h2>
+                        <div id="weatherInfo" class="space-y-2">
+                            <!-- Weather data will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Country Information -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-xl font-semibold mb-4">Informações do País</h2>
+                        <div id="countryInfo" class="space-y-2">
+                            <!-- Country data will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4">
+            </div>
+        </div>
+
+        <!-- Last Search -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold mb-4">Última Pesquisa</h2>
+            <div id="lastSearch" class="text-gray-600">
+                Nenhuma pesquisa realizada
+            </div>
+        </div>
+    </main>
+
+    <script>
+    document.getElementById('searchButton').addEventListener('click', async () => {
+        const city = document.getElementById('cityInput').value;
+        const weatherResult = document.getElementById('weatherResult');
+        const weatherInfo = document.getElementById('weatherInfo');
+        const countryInfo = document.getElementById('countryInfo');
+        const errorMessage = document.getElementById('errorMessage');
+        const lastSearch = document.getElementById('lastSearch');
+
+        try {
+            const response = await fetch(`/api/weather/${encodeURIComponent(city)}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                errorMessage.classList.add('hidden');
+                weatherResult.classList.remove('hidden');
+
+                // Update weather information
+                weatherInfo.innerHTML = `
+                    <p class="mb-2"><strong>Cidade:</strong> ${data.weather.city}, ${data.weather.country}</p>
+                    <p class="mb-2"><strong>Temperatura:</strong> ${data.weather.temperature}°C</p>
+                    <p class="mb-2"><strong>Condição:</strong> ${data.weather.description}</p>
+                    <p class="mb-2"><strong>Umidade:</strong> ${data.weather.humidity}%</p>
+                    <p class="mb-2"><strong>Velocidade do Vento:</strong> ${data.weather.windSpeed} m/s</p>
+                `;
+
+                // Update country information
+                countryInfo.innerHTML = `
+                    <p class="mb-2"><strong>País:</strong> ${data.countryInfo.name}</p>
+                    <p class="mb-2"><strong>Capital:</strong> ${data.countryInfo.capital}</p>
+                    <p class="mb-2"><strong>População:</strong> ${data.countryInfo.population.toLocaleString()}</p>
+                    <p class="mb-2"><strong>Região:</strong> ${data.countryInfo.region}</p>
+                    <div class="mt-4">
+                        <img src="${data.countryInfo.flag}" alt="Bandeira" class="w-32 h-auto shadow-sm">
+                    </div>
+                    <p class="mt-4">
+                        <a href="${data.countryInfo.maps}" target="_blank" class="text-blue-500 hover:text-blue-700">
+                            Ver no Google Maps
+                        </a>
+                    </p>
+                `;
+
+                // Update last search
+                lastSearch.textContent = `Última pesquisa: ${city} (${new Date().toLocaleString()})`;
+            } else {
+                throw new Error(data.error || 'Cidade não encontrada');
+            }
+        } catch (error) {
+            weatherResult.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+            errorMessage.textContent = error.message;
         }
-    } catch (error) {
-        weatherResult.style.display = 'none';
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = error.message;
-    }
-});
-</script>
+    });
+    </script>
+</body>
+</html>
