@@ -26,20 +26,17 @@ app.use(helmet({
 
 // Configurar rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // limite de 100 requisições por IP
-    message: 'Muitas requisições deste IP, por favor tente novamente após 15 minutos'
+    windowMs: 15 * 60 * 1000,
+    max: 100
 });
 
 app.use('/api/', limiter);
 
 // Conexão com MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log('Conectado ao MongoDB'))
-.catch(err => console.error('Erro na conexão com MongoDB:', err));
+const mongoUrl = process.env.MONGODB_URI;
+mongoose.connect(mongoUrl)
+    .then(() => console.log('Conectado ao MongoDB'))
+    .catch(err => console.error('Erro na conexão com MongoDB:', err));
 
 // Configurações do Express
 app.set('view engine', 'ejs');
@@ -48,20 +45,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Configuração da sessão com MongoStore
+const sessionStore = MongoStore.create({
+    mongoUrl: mongoUrl,
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60,
+    autoRemove: 'native'
+});
+
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI,
-        collectionName: 'sessions',
-        ttl: 24 * 60 * 60, // 24 horas
-        autoRemove: 'native'
-    }),
+    store: sessionStore,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 horas
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
@@ -110,13 +109,14 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
     });
 });
 
-// Manipulação de erros
+// Manipulação de erros 404
 app.use((req, res, next) => {
     res.status(404).render('404', {
         message: 'Página não encontrada'
     });
 });
 
+// Manipulação de erros 500
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).render('error', {
@@ -125,25 +125,12 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Configuração do servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-    console.log(`Servidor iniciado em ${new Date().toISOString()}`);
+app.listen(PORT, () => {
     console.log(`Servidor em execução na porta ${PORT}`);
-    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Usuário do sistema: DA-VB`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM recebido. Encerrando servidor...');
-    server.close(() => {
-        console.log('Servidor encerrado');
-        mongoose.connection.close(false, () => {
-            console.log('Conexão MongoDB fechada');
-            process.exit(0);
-        });
-    });
+    console.log(`Data atual (UTC): ${new Date().toISOString()}`);
+    console.log(`Usuário: DA-VB`);
 });
 
 module.exports = app;
