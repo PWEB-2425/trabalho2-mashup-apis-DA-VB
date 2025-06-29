@@ -11,7 +11,7 @@
             <div class="flex justify-between">
                 <div class="flex space-x-7">
                     <div class="py-4">
-                        <span class="font-semibold text-gray-500">Bem-vindo, <%= user.username %></span>
+                        <span class="font-semibold text-gray-500">Bem-vindo, <%= user.name %></span>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -23,84 +23,59 @@
 
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-2xl mx-auto">
-            <h2 class="text-2xl font-bold mb-6">Pesquisar Cidade</h2>
-            <form id="searchForm" class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Pesquisar Clima</h2>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                 <div class="flex gap-4">
                     <input type="text" id="cityInput" placeholder="Digite o nome da cidade"
                         class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-                    <button type="submit"
+                    <button id="searchButton"
                         class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                         Pesquisar
                     </button>
                 </div>
-            </form>
-
-            <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Resultados serão inseridos aqui -->
             </div>
 
-            <div class="mt-8">
-                <h3 class="text-xl font-bold mb-4">Histórico de Pesquisas</h3>
-                <ul id="searchHistory" class="space-y-2">
-                    <!-- Histórico será inserido aqui -->
-                </ul>
+            <div id="weatherResult" class="bg-white p-6 rounded-lg shadow-md mb-6" style="display: none;">
+                <h3 class="text-xl font-bold mb-4">Resultado</h3>
+                <div id="weatherInfo"></div>
+            </div>
+
+            <div id="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6" style="display: none;">
             </div>
         </div>
     </div>
 
     <script>
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.getElementById('searchButton').addEventListener('click', async () => {
             const city = document.getElementById('cityInput').value;
-            
-            try {
-                const response = await fetch(`/api/search?city=${encodeURIComponent(city)}`);
-                const data = await response.json();
-                
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = `
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-xl font-bold mb-4">Informações do Clima</h3>
-                        <p>Temperatura: ${data.weather.main.temp}°C</p>
-                        <p>Condição: ${data.weather.weather[0].description}</p>
-                        <p>Humidade: ${data.weather.main.humidity}%</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-xl font-bold mb-4">Informações do País</h3>
-                        <p>País: ${data.country.name.common}</p>
-                        <p>Capital: ${data.country.capital}</p>
-                        <p>População: ${data.country.population.toLocaleString()}</p>
-                        <img src="${data.country.flags.png}" alt="Bandeira" class="mt-4 w-32">
-                    </div>
-                `;
+            const weatherResult = document.getElementById('weatherResult');
+            const weatherInfo = document.getElementById('weatherInfo');
+            const errorMessage = document.getElementById('errorMessage');
 
-                // Atualizar histórico
-                updateSearchHistory();
+            try {
+                const response = await fetch(`/api/weather/${encodeURIComponent(city)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    errorMessage.style.display = 'none';
+                    weatherResult.style.display = 'block';
+                    weatherInfo.innerHTML = `
+                        <p class="mb-2"><strong>Cidade:</strong> ${data.city}, ${data.country}</p>
+                        <p class="mb-2"><strong>Temperatura:</strong> ${data.temperature}°C</p>
+                        <p class="mb-2"><strong>Condição:</strong> ${data.description}</p>
+                        <p class="mb-2"><strong>Umidade:</strong> ${data.humidity}%</p>
+                        <p><strong>Velocidade do Vento:</strong> ${data.windSpeed} m/s</p>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Erro ao buscar dados do clima');
+                }
             } catch (error) {
-                console.error('Erro na pesquisa:', error);
-                alert('Erro ao realizar a pesquisa. Tente novamente.');
+                weatherResult.style.display = 'none';
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = error.message;
             }
         });
-
-        async function updateSearchHistory() {
-            try {
-                const response = await fetch('/api/history');
-                const history = await response.json();
-                
-                const historyList = document.getElementById('searchHistory');
-                historyList.innerHTML = history.map(search => `
-                    <li class="bg-white p-4 rounded shadow">
-                        <p class="font-semibold">${search.query}</p>
-                        <p class="text-sm text-gray-500">${new Date(search.createdAt).toLocaleString()}</p>
-                    </li>
-                `).join('');
-            } catch (error) {
-                console.error('Erro ao carregar histórico:', error);
-            }
-        }
-
-        // Carregar histórico inicial
-        updateSearchHistory();
     </script>
 </body>
 </html>
