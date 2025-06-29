@@ -1,64 +1,55 @@
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
-const Search = require('../models/Search');
 
 // Middleware de autenticação
 const isAuthenticated = (req, res, next) => {
     if (req.isAuthenticated()) {
         return next();
     }
-    res.status(401).json({ error: 'Não autenticado' });
+    res.status(401).json({ error: 'Não autorizado' });
 };
 
-// Rota de pesquisa
-router.get('/search', isAuthenticated, async (req, res) => {
+// Rota para obter dados do clima
+router.get('/weather/:city', isAuthenticated, async (req, res) => {
     try {
-        const { city } = req.query;
+        const city = req.params.city;
+        const apiKey = process.env.WEATHER_API_KEY;
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=pt_br`;
 
-        // Chamada à API OpenWeatherMap
-        const weatherResponse = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${process.env.WEATHER_API_KEY}`
-        );
-        const weatherData = await weatherResponse.json();
+        const response = await fetch(url);
+        const data = await response.json();
 
-        // Chamada à API RestCountries
-        const countryResponse = await fetch(
-            `https://restcountries.com/v3.1/alpha/${weatherData.sys.country}`
-        );
-        const countryData = await countryResponse.json();
+        if (response.ok) {
+            // Log da busca
+            console.log(`[${new Date().toISOString()}] User ${req.user.email} searched for: ${city}`);
+            
+            // Formatar os dados do clima
+            const weatherData = {
+                city: data.name,
+                country: data.sys.country,
+                temperature: Math.round(data.main.temp),
+                description: data.weather[0].description,
+                humidity: data.main.humidity,
+                windSpeed: data.wind.speed,
+                icon: data.weather[0].icon,
+                timestamp: new Date().toISOString(),
+                user: req.user.email
+            };
 
-        // Salvar pesquisa no histórico
-        const search = new Search({
-            userId: req.user._id,
-            query: city,
-            results: {
-                weather: weatherData,
-                country: countryData[0]
-            }
-        });
-        await search.save();
-
-        res.json({
-            weather: weatherData,
-            country: countryData[0]
-        });
+            res.json(weatherData);
+        } else {
+            res.status(response.status).json({
+                error: 'Cidade não encontrada',
+                details: data.message
+            });
+        }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao processar a pesquisa' });
-    }
-});
-
-// Rota para obter histórico de pesquisas
-router.get('/history', isAuthenticated, async (req, res) => {
-    try {
-        const searches = await Search.find({ userId: req.user._id })
-            .sort({ createdAt: -1 })
-            .limit(10);
-        res.json(searches);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao obter histórico' });
+        console.error('Erro na API do clima:', error);
+        res.status(500).json({
+            error: 'Erro ao buscar dados do clima',
+            details: error.message
+        });
     }
 });
 
