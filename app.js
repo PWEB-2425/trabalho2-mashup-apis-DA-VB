@@ -54,21 +54,31 @@ app.use(session({
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGODB_URI,
-        ttl: 24 * 60 * 60, // 1 dia
-        autoRemove: 'native',
-        touchAfter: 24 * 3600 // atualiza sessão a cada 24 horas
+        ttl: 24 * 60 * 60,
+        autoRemove: 'native'
     }),
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 1 dia
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
 // Inicialização do Passport
 app.use(passport.initialize());
 app.use(passport.session());
-require('./config/passport')(passport);
+
+// Flash messages
+app.use(flash());
+
+// Global variables
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    res.locals.user = req.user || null;
+    next();
+});
 
 // Middleware de autenticação
 const isAuthenticated = (req, res, next) => {
