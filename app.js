@@ -12,8 +12,11 @@ const flash = require('connect-flash');
 // Inicializar Express
 const app = express();
 
+// Configurar trust proxy
+app.set('trust proxy', 1);
+
 // Timestamp e usuário
-const TIMESTAMP = '2025-06-29 22:30:03';
+const TIMESTAMP = '2025-06-29 22:51:26';
 const USER = 'DA-VB';
 
 console.log(`Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): ${TIMESTAMP}`);
@@ -39,7 +42,15 @@ app.use(helmet({
 // Configurar rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100 // limite de 100 requisições por IP
+    max: 100, // limite de 100 requisições por IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        console.log('Rate limit excedido para IP:', req.ip);
+        res.status(429).json({
+            error: 'Muitas requisições, tente novamente mais tarde'
+        });
+    }
 });
 
 app.use('/api/', limiter);
@@ -61,7 +72,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Configuração da sessão
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'default_secret_key',
     resave: true,
     saveUninitialized: true,
     store: MongoStore.create({
@@ -71,10 +82,12 @@ app.use(session({
         touchAfter: 24 * 3600
     }),
     cookie: {
-        secure: false, // Importante: mantenha false para desenvolvimento
+        secure: false,
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 horas
-    }
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: 'lax'
+    },
+    name: 'sessionId'
 }));
 
 // Flash messages
@@ -117,16 +130,6 @@ const isAuthenticated = (req, res, next) => {
 // Rotas
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
-
-// Rota de teste para verificar a sessão
-app.get('/session-test', (req, res) => {
-    res.json({
-        sessionID: req.sessionID,
-        authenticated: req.isAuthenticated(),
-        user: req.user,
-        session: req.session
-    });
-});
 
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
