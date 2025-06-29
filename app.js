@@ -32,35 +32,36 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Conexão com MongoDB
-const mongoUrl = process.env.MONGODB_URI;
-mongoose.connect(mongoUrl)
-    .then(() => console.log('Conectado ao MongoDB'))
-    .catch(err => console.error('Erro na conexão com MongoDB:', err));
-
 // Configurações do Express
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Configuração da sessão com MongoStore
-const sessionStore = MongoStore.create({
-    mongoUrl: mongoUrl,
-    collectionName: 'sessions',
-    ttl: 24 * 60 * 60,
-    autoRemove: 'native'
-});
+// Conexão com MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        console.log('Conectado ao MongoDB');
+        console.log(`Data atual (UTC): ${new Date().toISOString()}`);
+        console.log(`Usuário: DA-VB`);
+    })
+    .catch(err => console.error('Erro na conexão com MongoDB:', err));
 
+// Configuração da sessão
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: sessionStore,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        ttl: 24 * 60 * 60, // 1 dia
+        autoRemove: 'native',
+        touchAfter: 24 * 3600 // atualiza sessão a cada 24 horas
+    }),
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000 // 1 dia
     }
 }));
 
@@ -109,14 +110,13 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
     });
 });
 
-// Manipulação de erros 404
+// Manipulação de erros
 app.use((req, res, next) => {
     res.status(404).render('404', {
         message: 'Página não encontrada'
     });
 });
 
-// Manipulação de erros 500
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).render('error', {
@@ -129,6 +129,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor em execução na porta ${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Data atual (UTC): ${new Date().toISOString()}`);
     console.log(`Usuário: DA-VB`);
 });
