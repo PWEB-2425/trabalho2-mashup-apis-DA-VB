@@ -28,10 +28,14 @@ module.exports = function(passport) {
                         return done(null, false, { message: 'Senha incorreta' });
                     }
 
+                    // Atualizar último login
+                    user.lastLogin = new Date();
+                    await user.save();
+
                     console.log('Login bem-sucedido para:', email);
                     return done(null, user);
                 } catch (err) {
-                    console.error('Erro no processo de login:', err);
+                    console.error('Erro no login:', err);
                     return done(err);
                 }
             }
