@@ -1,73 +1,117 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/psUndoci)
-# Trabalho #2 API MASHUP
+# Weather App - Mashup de APIs
 
-**Data de Entrega:** 26 de junho de 2025
+## Identificação
+- Diogo Amorim Vilas Boas nº31860
 
----
+## Descrição do Projeto
+Aplicação web que permite aos usuários consultar informações meteorológicas de diferentes cidades.
+O sistema inclui autenticação de usuários e armazena o histórico de pesquisas.
 
-## 1. Objetivo
+## Tecnologias Utilizadas
 
-Desenvolver uma aplicação web que:
+### Backend
+- Node.js
+- Express.js
+- MongoDB (com Mongoose)
+- Passport.js (autenticação)
+- Express-session
+- Bcrypt.js (criptografia)
+- Connect-flash (mensagens)
+- Express-rate-limit (limitação de requisições)
+- Helmet (segurança)
 
-- Consuma e integre dados de pelo menos 2 APIs externas, com o **servidor** a efetuar todas as requisições (server-side).
-- Inclua um sistema de autenticação de utilizadores baseado em **Express Sessions** ou **Passport-local**.
-- Utilize base de dados **MongoDB** para armazenar informação dos utilizadores (por exemplo histórico de pesquisas)
+### Frontend
+- EJS (template engine)
+- Tailwind CSS
+- HTML5
+- JavaScript
 
-## 2. Funcionalidades
+### APIs
+1. **OpenWeather API**
+   - Fornece dados meteorológicos em tempo real
+   - Informações de temperatura, humidade, vento, etc.
+   - [Documentação](https://openweathermap.org/api)
 
-1. **Autenticação (Server)**
-   - Registo de utilizador (username + password)
-   - Início de sessão com sessões Express ou Passport-local
-   - Proteção de rotas para apenas utilizadores autenticados
-2. **Mashup de APIs**
-   - O utilizador, após login, introduz um termo de pesquisa (e.g., nome de cidade, artista, palavra)
-   - O servidor consome até duas APIs REST externas e retorna dados integrados ao cliente
-   - **Exemplos de APIs**:
-     - **OpenWeatherMap**: clima da cidade (`/weather?q={city}`)
-     - **RestCountries**: informações do país (`/alpha/{code}`)
-     - **Wikipedia REST API**: resumo de artigos (`/page/summary/{title}`)
-     - **Pixabay** ou **Unsplash**: imagens livres de royalties
-     - **NewsAPI** ou **GNews API**: notícias relacionadas
-     - **TMDB API**: informação e posters de filmes
-3. **Persistência em MongoDB**
-   - Guardar credenciais (idealmente hash das passwords)
-   - Histórico de pesquisas por utilizador
+2. **REST Countries API**
+   - Fornece informações detalhadas sobre países
+   - Dados como população, capital, bandeira, etc.
+   - [Documentação](https://restcountries.com/)
 
-## 3. Tecnologias
+## Configuração e Instalação
 
-- **Frontend**: HTML, CSS (ou Tailwind/Bootstrap), JavaScript
-- **Backend**: Node.js (v12+), Express
-  - Autenticação: **express-session** ou **passport-local**
-  - Chamadas a APIs feitas no servidor com ftech API (alternativamente com **Axios**, ou **node-fetch** em versoes mais antigas) usando **async/await**
-- **Base de Dados**: MongoDB (Atlas ou local)
+### Pré-requisitos
+- Node.js (v14 ou superior)
+- MongoDB
+- Git
 
-## 4. APIs Externas (sugeridas)
+### Instalação Local
 
-- **OpenWeatherMap** (clima e geocoding)
-- **RestCountries** (bandeiras, capitais, moedas)
-- **Wikipedia REST API** (enciclopédia)
-- **Pixabay** / **Unsplash** (imagens)
-- **NewsAPI** / **GNews API** (notícias)
-- **Exchange Rates API** (câmbio de moedas)
-- **DictionaryAPI** (definições, sinónimos)
-- **TMDB API** (filmes, trailers)
+1. Clone o repositório:
+```bash
+git clone https://github.com/PWEB-2425/trabalho2-mashup-apis-DA-VB.git
+cd trabalho2-mashup-apis-DA-VB
+```
 
-> **Nota:** Registem-se nas plataformas e obtenham as chaves necessárias. Todas as requisições a estas APIs devem ser feitas pelo servidor, protegendo as suas credenciais. As API Keys não devem ficar expostas no código.
+2. Instale as dependências:
+```bash
+npm install
+```
 
-## 5. Regras & Avaliação
+3. Configure as variáveis de ambiente:
+Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+```env
+MONGODB_URI=sua_url_mongodb
+SESSION_SECRET=seu_segredo_sessao
+WEATHER_API_KEY=sua_chave_api_openweather
+NODE_ENV=development
+PORT=3000
+```
 
-1. **Grupos:** 2 elementos por grupo.
-2. **GitHubClassroom:** Repositório privado com acesso ao utilizador `pedromoreira-estg`.
-3. **Build & Install:** Incluir script para instalar dependências e iniciar a aplicação.
-4. **Documentação (`README.md`):** Incluir:
-   - Identificação dos elementos do grupo
-   - Tecnologias e APIs utilizadas
-   - Instruções de instalação e configuração das chaves e do MongoDB
-   - Comandos para executar localmente
-   - Link de deployment (**render.com** ou equivalente)
-5. **Deployment:** Aplicação operacional online (ex.: render.com).
-6. **Entrega em Moodle:** Cópia do `README.md` e `.zip`e **link** do repositório.
+### Configuração do MongoDB
 
----
+1. Crie uma conta no [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Crie um novo cluster
+3. Configure o acesso ao banco:
+   - Crie um usuário do banco de dados
+   - Configure o IP de acesso (0.0.0.0/0 para acesso de qualquer lugar)
+4. Obtenha a string de conexão e adicione ao arquivo `.env`
 
-Boa sorte!
+### Configuração das APIs
+
+1. **OpenWeather API**
+   - Crie uma conta em [OpenWeather](https://openweathermap.org/api)
+   - Obtenha sua API key
+   - Adicione a chave ao arquivo `.env` como `WEATHER_API_KEY`
+
+2. **REST Countries API**
+   - Não requer chave de API
+   - Acesso público e gratuito
+   - Endpoints disponíveis em [RestCountries](https://restcountries.com/)
+
+## Executar localmente
+
+### Desenvolvimento
+```bash
+npm run dev
+```
+
+### Produção
+```bash
+npm start
+```
+
+## Acesso ao Sistema
+
+### Usuário Administrador
+- Email: admin@davb.com
+- Senha: admin2024
+
+Para criar o admin pela primeira vez, acesse:
+```
+/auth/create-admin
+```
+
+## Deployment
+
+O projeto está deployado no Render.com e pode ser acessado em:
+[https://trabalho2-mashup-apis-da-vb.onrender.com](https://trabalho2-mashup-apis-da-vb.onrender.com)
