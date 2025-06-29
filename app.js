@@ -5,8 +5,9 @@ const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const mongoose = require('mongoose');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const flash = require('connect-flash');
 
 // Inicializar Express
 const app = express();
@@ -26,17 +27,11 @@ app.use(helmet({
 
 // Configurar rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100 // limite de 100 requisições por IP
 });
 
 app.use('/api/', limiter);
-
-// Configurações do Express
-app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 
 // Conexão com MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -46,6 +41,12 @@ mongoose.connect(process.env.MONGODB_URI)
         console.log(`Usuário: DA-VB`);
     })
     .catch(err => console.error('Erro na conexão com MongoDB:', err));
+
+// Configurações do Express
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Configuração da sessão
 app.use(session({
@@ -64,12 +65,13 @@ app.use(session({
     }
 }));
 
+// Flash messages
+app.use(flash());
+
 // Inicialização do Passport
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Flash messages
-app.use(flash());
+require('./config/passport')(passport);
 
 // Global variables
 app.use((req, res, next) => {
@@ -87,13 +89,6 @@ const isAuthenticated = (req, res, next) => {
     }
     res.redirect('/auth/login');
 };
-
-// Middleware para dados do usuário
-app.use((req, res, next) => {
-    res.locals.user = req.user;
-    res.locals.isAuthenticated = req.isAuthenticated();
-    next();
-});
 
 // Rotas
 const authRoutes = require('./routes/auth');
