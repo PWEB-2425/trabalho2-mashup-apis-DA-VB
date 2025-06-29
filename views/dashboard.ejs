@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div class="py-4">
+                        <span class="font-semibold text-gray-500">Bem-vindo, <%= user.username %></span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="/auth/logout" class="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">Pesquisar Cidade</h2>
+            <form id="searchForm" class="mb-8">
+                <div class="flex gap-4">
+                    <input type="text" id="cityInput" placeholder="Digite o nome da cidade"
+                        class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <button type="submit"
+                        class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                        Pesquisar
+                    </button>
+                </div>
+            </form>
+
+            <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Resultados serão inseridos aqui -->
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-xl font-bold mb-4">Histórico de Pesquisas</h3>
+                <ul id="searchHistory" class="space-y-2">
+                    <!-- Histórico será inserido aqui -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const city = document.getElementById('cityInput').value;
+            
+            try {
+                const response = await fetch(`/api/search?city=${encodeURIComponent(city)}`);
+                const data = await response.json();
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-bold mb-4">Informações do Clima</h3>
+                        <p>Temperatura: ${data.weather.main.temp}°C</p>
+                        <p>Condição: ${data.weather.weather[0].description}</p>
+                        <p>Humidade: ${data.weather.main.humidity}%</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-bold mb-4">Informações do País</h3>
+                        <p>País: ${data.country.name.common}</p>
+                        <p>Capital: ${data.country.capital}</p>
+                        <p>População: ${data.country.population.toLocaleString()}</p>
+                        <img src="${data.country.flags.png}" alt="Bandeira" class="mt-4 w-32">
+                    </div>
+                `;
+
+                // Atualizar histórico
+                updateSearchHistory();
+            } catch (error) {
+                console.error('Erro na pesquisa:', error);
+                alert('Erro ao realizar a pesquisa. Tente novamente.');
+            }
+        });
+
+        async function updateSearchHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const history = await response.json();
+                
+                const historyList = document.getElementById('searchHistory');
+                historyList.innerHTML = history.map(search => `
+                    <li class="bg-white p-4 rounded shadow">
+                        <p class="font-semibold">${search.query}</p>
+                        <p class="text-sm text-gray-500">${new Date(search.createdAt).toLocaleString()}</p>
+                    </li>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao carregar histórico:', error);
+            }
+        }
+
+        // Carregar histórico inicial
+        updateSearchHistory();
+    </script>
+</body>
+</html>

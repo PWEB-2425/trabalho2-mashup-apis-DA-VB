@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: api-mashup
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: WEATHER_API_KEY
+        sync: false
